@@ -54,4 +54,7 @@ void NetlinkHandler::onEvent(NetlinkEvent *evt) {
     if (!strcmp(subsys, "block")) {
         vm->handleBlockEvent(evt);
     }
+    if (!strcmp(subsys, "platform")) {
+        vm->handlePlatformEvent(evt);
+    }
 }

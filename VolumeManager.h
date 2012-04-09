@@ -66,6 +66,7 @@ private:
     int                    mSavedDirtyRatio;
     int                    mUmsDirtyRatio;
     int                    mVolManagerDisabled;
+    bool                   mUsbPlatformConnected;
 
 public:
     virtual ~VolumeManager();
@@ -74,6 +75,7 @@ public:
     int stop();
 
     void handleBlockEvent(NetlinkEvent *evt);
+    void handlePlatformEvent(NetlinkEvent *evt);
 
     int addVolume(Volume *v);
 

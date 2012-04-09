@@ -56,6 +56,12 @@
 #define MASS_STORAGE_FILE_PATH  "/sys/devices/platform/usb_mass_storage/lun0/file"
 #endif
 
+#ifdef AM335X
+#define MUSB_MODE_PATH "/sys/devices/platform/omap/musb-ti81xx/musb-hdrc.0/mode"
+#else
+#define MUSB_MODE_PATH "/sys/devices/platform/musb-omap2430.0/musb-hdrc.0/mode"
+#endif
+
 VolumeManager *VolumeManager::sInstance = NULL;
 
 VolumeManager *VolumeManager::Instance() {
@@ -74,6 +80,7 @@ VolumeManager::VolumeManager() {
     // set dirty ratio to 0 when UMS is active
     mUmsDirtyRatio = 0;
     mVolManagerDisabled = 0;
+    mUsbPlatformConnected = false;
 }
 
 VolumeManager::~VolumeManager() {
@@ -159,6 +166,47 @@ void VolumeManager::handleBlockEvent(NetlinkEvent *evt) {
 #ifdef NETLINK_DEBUG
         SLOGW("No volumes handled block event for '%s'", devpath);
 #endif
+    }
+}
+
+void VolumeManager::handlePlatformEvent(NetlinkEvent *evt) {
+    /*
+     * Read the Platform USB connected state
+     */
+    FILE *fp;
+    char state[255];
+    bool oldUsbPlatformConnected = mUsbPlatformConnected;
+    if ((fp = fopen(MUSB_MODE_PATH, "r"))) {
+        if (fgets(state, sizeof(state), fp)) {
+            mUsbPlatformConnected = !strncmp(state, "b_peripheral",12);
+        } else {
+            SLOGE("Failed to read mUsbplatformConnected mode (%s)", strerror(errno));
+        }
+        fclose(fp);
+
+        if(oldUsbPlatformConnected != mUsbPlatformConnected) {
+            SLOGD("mUsbPlatformConnected mode %s", mUsbPlatformConnected ? "b_peripheral" : "b_idle");
+            FILE *fp;
+	        if(mUsbPlatformConnected){
+                if ((fp = fopen("/sys/power/wake_lock", "w+"))) {
+                    fprintf(fp, "%s", "usb_connected");
+                    fclose(fp);
+                } else {
+                    SLOGE("Failed to open /sys/power/wake_lock (%s)", strerror(errno));
+                }
+		SLOGD("platform usb is connected,wake lock written!!! ");
+            } else {
+                if ((fp = fopen("/sys/power/wake_unlock", "w+"))) {
+                    fprintf(fp, "%s", "usb_connected");
+                    fclose(fp);
+                } else {
+                    SLOGE("Failed to open /sys/power/wake_unlock (%s)", strerror(errno));
+                }
+		SLOGD("platform usb is disconnected,wake lock deleted");
+            }
+        }
+    } else {
+        SLOGD(MUSB_MODE_PATH " not enabled in the kernel");
     }
 }
 
