@@ -58,6 +58,14 @@ LOCAL_C_INCLUDES := $(common_c_includes)
 
 LOCAL_CFLAGS := -Werror=format
 
+ifneq (,$(findstring am335xevm, $(TARGET_PRODUCT)))
+    LOCAL_CFLAGS += -DAM335X
+endif
+
+ifneq (,$(findstring beaglebone, $(TARGET_PRODUCT)))
+    LOCAL_CFLAGS += -DAM335X
+endif
+
 LOCAL_SHARED_LIBRARIES := $(common_shared_libraries)
 
 LOCAL_STATIC_LIBRARIES := libfs_mgr
