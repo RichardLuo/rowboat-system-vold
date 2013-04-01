@@ -33,6 +33,7 @@
 #include <openssl/md5.h>
 
 #include <cutils/log.h>
+#include <cutils/properties.h>
 
 #include <sysutils/NetlinkEvent.h>
 
@@ -144,6 +145,11 @@ void VolumeManager::handleBlockEvent(NetlinkEvent *evt) {
 #ifdef NETLINK_DEBUG
             SLOGD("Device '%s' event handled by volume %s\n", devpath, (*it)->getLabel());
 #endif
+            /* Special handling for 3G dongles */
+            if (strcmp((*it)->getLabel(),"usb")  == 0) {
+                SLOGD("start usb modswitch service");
+                property_set("ctl.start","usb_modeswitch");
+            }
             hit = true;
             break;
         }
